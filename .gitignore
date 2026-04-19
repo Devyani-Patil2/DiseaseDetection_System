@@ -1,0 +1,25 @@
+# Environments
+myenv/
+env/
+venv/
+.env
+
+# Datasets and heavy files
+plantvillage dataset/
+models/*.keras
+models/*.h5
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs and results (optional, uncomment if you want to ignore them)
+# results/
+training_log.txt
+version_check.txt
+env_check.json
