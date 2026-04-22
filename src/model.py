@@ -1,8 +1,3 @@
-"""
-Model Architecture Module for Plant Leaf Disease Detection.
-Uses MobileNetV2 with Transfer Learning for efficient, accurate classification.
-"""
-
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 from src.config import (
