@@ -154,7 +154,7 @@ def optimize_dataset(train_ds, val_ds, test_ds):
     Optimize datasets for performance using prefetching.
     
     NOTE: No pixel normalization here! Images stay in [0, 255] range.
-    The model handles preprocessing internally via MobileNetV2's preprocess_input.
+    The model handles normalization internally via its built-in Rescaling layer.
     
     Args:
         train_ds, val_ds, test_ds: Raw datasets

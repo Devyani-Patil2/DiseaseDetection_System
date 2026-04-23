@@ -54,7 +54,7 @@ def preprocess_image(image_path):
     img = img.resize((IMG_SIZE, IMG_SIZE))
     
     # Convert to numpy array — keep in [0, 255] range
-    # Model handles normalization internally via MobileNetV2 preprocess_input
+    # Model handles normalization internally via Rescaling layer
     img_array = np.array(img, dtype=np.float32)
     
     # Add batch dimension (1, 224, 224, 3)

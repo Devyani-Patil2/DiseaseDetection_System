@@ -29,18 +29,16 @@ MODEL_SAVE_PATH_KERAS = os.path.join(MODELS_DIR, "plant_disease_model.keras")
 # ============================================================
 # IMAGE PARAMETERS
 # ============================================================
-IMG_SIZE = 224          # MobileNetV2 expects 224x224
+IMG_SIZE = 224          # Input image size
 IMG_CHANNELS = 3        # RGB
 INPUT_SHAPE = (IMG_SIZE, IMG_SIZE, IMG_CHANNELS)
 
 # ============================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================
-BATCH_SIZE = 32  # Larger batch = fewer steps = faster training
-EPOCHS_PHASE1 = 8       # Increased for better feature extraction
-EPOCHS_PHASE2 = 15      # Increased to give fine-tuning more time
+BATCH_SIZE = 32
+EPOCHS_PHASE1 = 40      # More epochs needed when training from scratch
 LEARNING_RATE_PHASE1 = 1e-3
-LEARNING_RATE_PHASE2 = 1e-5  # Must be very low for fine-tuning to prevent catastrophic forgetting
 DROPOUT_RATE = 0.5
 DENSE_UNITS = 256
 
@@ -64,18 +62,13 @@ VERTICAL_FLIP = False
 BRIGHTNESS_RANGE = (0.8, 1.2)
 FILL_MODE = "nearest"
 
-# ============================================================
-# FINE-TUNING PARAMETERS
-# ============================================================
-# Number of layers to unfreeze from the top of MobileNetV2
-# MobileNetV2 has 155 layers total; we unfreeze the last 30
-FINE_TUNE_AT = 125  # Freeze layers 0 to 124, unfreeze 125+
+
 
 # ============================================================
 # CALLBACKS
 # ============================================================
-EARLY_STOP_PATIENCE = 5
-REDUCE_LR_PATIENCE = 3
+EARLY_STOP_PATIENCE = 8
+REDUCE_LR_PATIENCE = 4
 REDUCE_LR_FACTOR = 0.5
 MIN_LR = 1e-7
 

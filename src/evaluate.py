@@ -270,7 +270,7 @@ def evaluate():
     val_size = val_test_size // 2
     test_ds = val_test_ds.skip(val_size)
     
-    # No normalization needed — model handles preprocessing internally via preprocess_input
+    # No normalization needed — model handles it internally via Rescaling layer
     
     # Get predictions
     print("\nGenerating predictions on test set...")

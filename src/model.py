@@ -1,76 +1,108 @@
+"""
+Model Architecture Module for Plant Leaf Disease Detection.
+Custom CNN built from scratch — no pre-trained models used.
+"""
+
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 from src.config import (
     INPUT_SHAPE, NUM_CLASSES, DROPOUT_RATE, DENSE_UNITS,
-    LEARNING_RATE_PHASE1, LEARNING_RATE_PHASE2, FINE_TUNE_AT
+    LEARNING_RATE_PHASE1
 )
 from src.data_preprocessing import create_augmentation_layer
 
 
 def build_model(num_classes=NUM_CLASSES):
     """
-    Build a MobileNetV2-based model for plant disease classification.
+    Build a custom CNN model from scratch for plant disease classification.
     
     Architecture:
         Input (224x224x3)
-            → Data Augmentation (training only)
-            → MobileNetV2 (pre-trained, frozen)
-            → Global Average Pooling
-            → Dense(256, ReLU)
-            → Dropout(0.5)
-            → Dense(38, Softmax)
+            -> Rescaling (0-255 to 0-1)
+            -> Data Augmentation (training only)
+            -> Conv Block 1: Conv2D(32) + BatchNorm + ReLU + MaxPool
+            -> Conv Block 2: Conv2D(64) + BatchNorm + ReLU + MaxPool
+            -> Conv Block 3: Conv2D(128) + BatchNorm + ReLU + Conv2D(128) + BatchNorm + ReLU + MaxPool
+            -> Conv Block 4: Conv2D(256) + BatchNorm + ReLU + Conv2D(256) + BatchNorm + ReLU + MaxPool
+            -> Conv Block 5: Conv2D(512) + BatchNorm + ReLU + Conv2D(512) + BatchNorm + ReLU + MaxPool
+            -> Global Average Pooling
+            -> Dense(512, ReLU) + Dropout(0.5)
+            -> Dense(256, ReLU) + Dropout(0.3)
+            -> Dense(38, Softmax)
     
     Args:
         num_classes: Number of output classes (default: 38)
     
     Returns:
-        model: Compiled Keras model (Phase 1 - feature extraction)
+        model: Compiled Keras model
     """
     print("\n" + "=" * 60)
-    print("BUILDING MODEL ARCHITECTURE")
+    print("BUILDING CUSTOM CNN ARCHITECTURE")
     print("=" * 60)
     
     # Data augmentation layer
     data_augmentation = create_augmentation_layer()
     
-    # Load MobileNetV2 pre-trained on ImageNet (without top classification layer)
-    base_model = tf.keras.applications.MobileNetV2(
-        input_shape=INPUT_SHAPE,
-        include_top=False,          # Remove the classification head
-        weights='imagenet'          # Pre-trained weights
-    )
-    
-    # Freeze the base model (Phase 1: Feature Extraction)
-    base_model.trainable = False
-    
-    print(f"\n✓ MobileNetV2 base model loaded")
-    print(f"  Total layers: {len(base_model.layers)}")
-    print(f"  Trainable: False (frozen for Phase 1)")
-    
-    # Build the complete model
+    # Build the model from scratch
     inputs = tf.keras.Input(shape=INPUT_SHAPE)
     
-    # Apply augmentation (only during training) — images are in [0, 255]
-    x = data_augmentation(inputs)
+    # Normalize pixel values from [0, 255] to [0, 1]
+    x = layers.Rescaling(1./255, name='rescaling')(inputs)
     
-    # MobileNetV2 preprocess_input scales [0, 255] → [-1, 1]
-    # Images are already in [0, 255] range from the data pipeline
-    x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
+    # Apply data augmentation (only during training)
+    x = data_augmentation(x)
     
-    # Pass through base model (training=False keeps BatchNorm in inference mode,
-    # which is recommended for transfer learning to prevent destabilizing updates)
-    x = base_model(x, training=False)
+    # ===== Block 1: 32 filters =====
+    x = layers.Conv2D(32, (3, 3), padding='same', name='block1_conv1')(x)
+    x = layers.BatchNormalization(name='block1_bn1')(x)
+    x = layers.Activation('relu', name='block1_relu1')(x)
+    x = layers.MaxPooling2D((2, 2), name='block1_pool')(x)
     
-    # Custom classification head
-    x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Dense(DENSE_UNITS, activation='relu', name='dense_features')(x)
-    x = layers.Dropout(DROPOUT_RATE, name='dropout')(x)
+    # ===== Block 2: 64 filters =====
+    x = layers.Conv2D(64, (3, 3), padding='same', name='block2_conv1')(x)
+    x = layers.BatchNormalization(name='block2_bn1')(x)
+    x = layers.Activation('relu', name='block2_relu1')(x)
+    x = layers.MaxPooling2D((2, 2), name='block2_pool')(x)
+    
+    # ===== Block 3: 128 filters (double conv for deeper features) =====
+    x = layers.Conv2D(128, (3, 3), padding='same', name='block3_conv1')(x)
+    x = layers.BatchNormalization(name='block3_bn1')(x)
+    x = layers.Activation('relu', name='block3_relu1')(x)
+    x = layers.Conv2D(128, (3, 3), padding='same', name='block3_conv2')(x)
+    x = layers.BatchNormalization(name='block3_bn2')(x)
+    x = layers.Activation('relu', name='block3_relu2')(x)
+    x = layers.MaxPooling2D((2, 2), name='block3_pool')(x)
+    
+    # ===== Block 4: 256 filters =====
+    x = layers.Conv2D(256, (3, 3), padding='same', name='block4_conv1')(x)
+    x = layers.BatchNormalization(name='block4_bn1')(x)
+    x = layers.Activation('relu', name='block4_relu1')(x)
+    x = layers.Conv2D(256, (3, 3), padding='same', name='block4_conv2')(x)
+    x = layers.BatchNormalization(name='block4_bn2')(x)
+    x = layers.Activation('relu', name='block4_relu2')(x)
+    x = layers.MaxPooling2D((2, 2), name='block4_pool')(x)
+    
+    # ===== Block 5: 512 filters =====
+    x = layers.Conv2D(512, (3, 3), padding='same', name='block5_conv1')(x)
+    x = layers.BatchNormalization(name='block5_bn1')(x)
+    x = layers.Activation('relu', name='block5_relu1')(x)
+    x = layers.Conv2D(512, (3, 3), padding='same', name='block5_conv2')(x)
+    x = layers.BatchNormalization(name='block5_bn2')(x)
+    x = layers.Activation('relu', name='block5_relu2')(x)
+    x = layers.MaxPooling2D((2, 2), name='block5_pool')(x)
+    
+    # ===== Classification Head =====
+    x = layers.GlobalAveragePooling2D(name='global_avg_pool')(x)
+    x = layers.Dense(512, activation='relu', name='dense_512')(x)
+    x = layers.Dropout(DROPOUT_RATE, name='dropout_1')(x)
+    x = layers.Dense(DENSE_UNITS, activation='relu', name='dense_256')(x)
+    x = layers.Dropout(0.3, name='dropout_2')(x)
     outputs = layers.Dense(num_classes, activation='softmax', name='predictions')(x)
     
     # Create the model
-    model = Model(inputs, outputs, name='PlantDiseaseDetector')
+    model = Model(inputs, outputs, name='PlantDiseaseDetector_CustomCNN')
     
-    # Compile for Phase 1 (Feature Extraction)
+    # Compile
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE_PHASE1),
         loss='sparse_categorical_crossentropy',
@@ -78,59 +110,16 @@ def build_model(num_classes=NUM_CLASSES):
     )
     
     # Print model summary
-    print(f"\n✓ Model built successfully")
+    print(f"\n  Model built successfully")
     print(f"  Input shape: {INPUT_SHAPE}")
     print(f"  Output classes: {num_classes}")
-    print(f"  Dense units: {DENSE_UNITS}")
-    print(f"  Dropout rate: {DROPOUT_RATE}")
+    print(f"  Architecture: Custom 5-Block CNN (built from scratch)")
     
     trainable_params = sum([tf.keras.backend.count_params(w) for w in model.trainable_weights])
     non_trainable_params = sum([tf.keras.backend.count_params(w) for w in model.non_trainable_weights])
     print(f"  Trainable parameters: {trainable_params:,}")
     print(f"  Non-trainable parameters: {non_trainable_params:,}")
-    print(f"  Phase 1 learning rate: {LEARNING_RATE_PHASE1}")
-    
-    return model, base_model
-
-
-def unfreeze_model(model, base_model):
-    """
-    Unfreeze the top layers of MobileNetV2 for fine-tuning (Phase 2).
-    
-    Args:
-        model: The compiled model
-        base_model: The MobileNetV2 base model
-    
-    Returns:
-        model: Re-compiled model ready for fine-tuning
-    """
-    print("\n" + "=" * 60)
-    print("PHASE 2: FINE-TUNING")
-    print("=" * 60)
-    
-    # Unfreeze the base model
-    base_model.trainable = True
-    
-    # Freeze everything before FINE_TUNE_AT layer
-    for layer in base_model.layers[:FINE_TUNE_AT]:
-        layer.trainable = False
-    
-    unfrozen_layers = len(base_model.layers) - FINE_TUNE_AT
-    print(f"  Unfreezing top {unfrozen_layers} layers of MobileNetV2")
-    print(f"  Frozen layers: 0 to {FINE_TUNE_AT - 1}")
-    print(f"  Trainable layers: {FINE_TUNE_AT} to {len(base_model.layers) - 1}")
-    
-    # Re-compile with a much lower learning rate
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE_PHASE2),
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
-    )
-    
-    trainable_params = sum([tf.keras.backend.count_params(w) for w in model.trainable_weights])
-    print(f"  New learning rate: {LEARNING_RATE_PHASE2}")
-    print(f"  New trainable parameters: {trainable_params:,}")
-    print("✓ Model unfrozen and re-compiled for fine-tuning")
+    print(f"  Learning rate: {LEARNING_RATE_PHASE1}")
     
     return model
 
@@ -145,8 +134,5 @@ def get_model_summary(model):
 
 if __name__ == "__main__":
     # Test model creation
-    model, base_model = build_model()
+    model = build_model()
     get_model_summary(model)
-    
-    # Test fine-tuning preparation
-    model = unfreeze_model(model, base_model)
