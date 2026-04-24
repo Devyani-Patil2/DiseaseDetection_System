@@ -1,8 +1,3 @@
-"""
-Model Architecture Module for Plant Leaf Disease Detection.
-Custom CNN built from scratch — no pre-trained models used.
-"""
-
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 from src.config import (
