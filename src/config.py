@@ -38,7 +38,7 @@ INPUT_SHAPE = (IMG_SIZE, IMG_SIZE, IMG_CHANNELS)
 # ============================================================
 BATCH_SIZE = 32
 EPOCHS_PHASE1 = 40      # More epochs needed when training from scratch
-LEARNING_RATE_PHASE1 = 1e-3
+LEARNING_RATE_PHASE1 = 5e-4
 DROPOUT_RATE = 0.5
 DENSE_UNITS = 256
 

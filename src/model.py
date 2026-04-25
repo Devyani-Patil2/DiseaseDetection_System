@@ -41,11 +41,12 @@ def build_model(num_classes=NUM_CLASSES):
     # Build the model from scratch
     inputs = tf.keras.Input(shape=INPUT_SHAPE)
     
-    # Normalize pixel values from [0, 255] to [0, 1]
-    x = layers.Rescaling(1./255, name='rescaling')(inputs)
-    
     # Apply data augmentation (only during training)
-    x = data_augmentation(x)
+    # MUST be done before Rescaling so the value_range=(0, 255) in Brightness works correctly
+    x = data_augmentation(inputs)
+    
+    # Normalize pixel values from [0, 255] to [0, 1]
+    x = layers.Rescaling(1./255, name='rescaling')(x)
     
     # ===== Block 1: 32 filters =====
     x = layers.Conv2D(32, (3, 3), padding='same', name='block1_conv1')(x)
