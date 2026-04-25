@@ -127,6 +127,11 @@ def plot_confusion_matrix(y_true, y_pred, class_names):
     plt.close()
     print(f"  Confusion matrix saved to: {save_path}")
     
+    # Save raw confusion matrix to JSON for dynamic dashboard analysis
+    cm_json_path = os.path.join(RESULTS_DIR, "confusion_matrix.json")
+    with open(cm_json_path, 'w') as f:
+        json.dump(cm.tolist(), f)
+    
     return cm
 
 
@@ -429,7 +434,7 @@ def evaluate():
     print(f"All results saved in: {RESULTS_DIR}")
     print(f"\nFiles generated:")
     print(f"  training_curves.png")
-    print(f"  confusion_matrix.png")
+    print(f"  confusion_matrix.json")
     print(f"  per_class_accuracy.png")
     print(f"  roc_curve.png")
     print(f"  classification_report.txt")

@@ -346,6 +346,9 @@ def page_diagnostic():
             status_color = '#10b981' if is_healthy else '#ef4444'
             conf_class = 'confidence-high' if top['confidence'] > 0.8 else 'confidence-medium'
             
+            # Save for analytics page
+            st.session_state.current_prediction = top['class_name']
+            
             # Clinical Result Block
             st.markdown(f"""
             <div class="result-card {card_class}">
@@ -443,128 +446,143 @@ def page_analytics():
     st.markdown("""
     <div class="main-header">
         <h1>Model Analytics Dashboard</h1>
-        <p>Comprehensive evaluation metrics, ROC analysis, and model comparisons</p>
+        <p>Live inference performance metrics for the current subject</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Check if results exist
-    roc_path = os.path.join(RESULTS_DIR, "roc_curve.png")
-    cm_path = os.path.join(RESULTS_DIR, "confusion_matrix.png")
-    training_path = os.path.join(RESULTS_DIR, "training_curves.png")
-    per_class_path = os.path.join(RESULTS_DIR, "per_class_accuracy.png")
+    # Check if a prediction exists in session state
+    if 'current_prediction' not in st.session_state or not st.session_state.current_prediction:
+        st.markdown("""
+        <div style="background-color: #1e293b; border: 1px dashed #334155; 
+                    border-radius: 8px; padding: 3rem; text-align: center; margin-top: 1rem;">
+            <div style="color: #64748b; font-size: 1.2rem; font-weight: 500; margin-bottom: 0.5rem;">
+                Awaiting Target Inference
+            </div>
+            <div style="color: #475569; font-size: 0.9rem;">
+                Please upload an image in the Diagnostic Engine to view specific analytics.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+
+    predicted_class = st.session_state.current_prediction
+    predicted_class_clean = predicted_class.replace('___', ' -> ').replace('_', ' ')
+    
+    # Check if JSON results exist
     report_path = os.path.join(RESULTS_DIR, "classification_report.json")
-    comparison_path = os.path.join(RESULTS_DIR, "model_comparison.json")
+    cm_path = os.path.join(RESULTS_DIR, "confusion_matrix.json")
+    class_names_path = CLASS_NAMES_PATH
     
-    has_results = os.path.exists(roc_path) or os.path.exists(cm_path)
-    
-    if not has_results:
-        st.warning("Analytics data not yet generated. Please train the model and run evaluation first.")
+    if not os.path.exists(report_path) or not os.path.exists(cm_path):
+        st.warning("Backend analytics data missing. Please train and evaluate the model first.")
         st.code("python -m src.train\npython -m src.evaluate", language="bash")
         return
-    
-    # --- Section 1: Model Comparison ---
-    st.markdown("### Model Performance Comparison")
-    render_model_comparison_chart()
-    
-    st.markdown("---")
-    
-    # --- Section 2: ROC Curve ---
-    st.markdown("### ROC Curve Analysis")
+        
+    st.markdown(f"### Live Inference Metrics: <span style='color:#3b82f6;'>{predicted_class_clean}</span>", unsafe_allow_html=True)
     st.markdown(
-        '<div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.8rem;">'
-        'Receiver Operating Characteristic curve measuring the trade-off between True Positive Rate '
-        'and False Positive Rate across all 38 disease classes. Higher AUC = better model.'
+        '<div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.5rem;">'
+        'Historical model performance metrics specific to the predicted pathology.'
         '</div>',
         unsafe_allow_html=True
     )
-    if os.path.exists(roc_path):
-        st.image(roc_path, use_container_width=True)
-    else:
-        st.info("ROC curve not yet generated. Run: python -m src.evaluate")
+    
+    # --- Classification Performance ---
+    import pandas as pd
+    
+    with open(report_path, 'r') as f:
+        report_data = json.load(f)
+        
+    if predicted_class in report_data:
+        metrics = report_data[predicted_class]
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(f"""
+            <div class="stat-card" style="border-top: 3px solid #3b82f6;">
+                <div class="stat-number">{metrics['precision']*100:.1f}%</div>
+                <div class="stat-label">Precision (Accuracy of Prediction)</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="stat-card" style="border-top: 3px solid #10b981;">
+                <div class="stat-number">{metrics['recall']*100:.1f}%</div>
+                <div class="stat-label">Recall (Detection Rate)</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+            <div class="stat-card" style="border-top: 3px solid #8b5cf6;">
+                <div class="stat-number">{metrics['f1-score']*100:.1f}%</div>
+                <div class="stat-label">F1-Score (Overall Reliability)</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # --- Section 3: Training Curves ---
-    col_train, col_cm = st.columns(2)
-    
-    with col_train:
-        st.markdown("### Training History")
-        if os.path.exists(training_path):
-            st.image(training_path, use_container_width=True)
-        else:
-            st.info("Training curves not available.")
-    
-    with col_cm:
-        st.markdown("### Per-Class Accuracy")
-        if os.path.exists(per_class_path):
-            st.image(per_class_path, use_container_width=True)
-        else:
-            st.info("Per-class accuracy chart not available.")
-    
-    st.markdown("---")
-    
-    # --- Section 4: Confusion Matrix ---
-    st.markdown("### Confusion Matrix")
+    # --- Confusion Analysis ---
+    st.markdown("### Misclassification Risk Analysis")
     st.markdown(
-        '<div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.8rem;">'
-        '38x38 normalized heatmap showing prediction accuracy per disease class. '
-        'Diagonal values represent correct predictions.'
+        '<div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1rem;">'
+        'Historical confusion risks based on test dataset validation.'
         '</div>',
         unsafe_allow_html=True
     )
-    if os.path.exists(cm_path):
-        st.image(cm_path, use_container_width=True)
-    else:
-        st.info("Confusion matrix not yet generated.")
     
-    st.markdown("---")
+    with open(cm_path, 'r') as f:
+        cm_matrix = json.load(f)
+        
+    class_names = load_class_names()
     
-    # --- Section 5: Classification Report ---
-    st.markdown("### Classification Report")
-    st.markdown(
-        '<div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.8rem;">'
-        'Per-class Precision, Recall, and F1-Score metrics for all 38 disease classes.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-    if os.path.exists(report_path):
-        import pandas as pd
-        with open(report_path, 'r') as f:
-            report_data = json.load(f)
+    try:
+        class_idx = class_names.index(predicted_class)
+        # Get the row for the predicted class (when true label is this class)
+        row = cm_matrix[class_idx]
+        total_samples = sum(row)
         
-        # Filter out summary rows and build a clean dataframe
-        class_metrics = {}
-        for key, val in report_data.items():
-            if key not in ['accuracy', 'macro avg', 'weighted avg']:
-                class_metrics[key.replace('___', ' -> ')] = {
-                    'Precision': round(val['precision'], 4),
-                    'Recall': round(val['recall'], 4),
-                    'F1-Score': round(val['f1-score'], 4),
-                    'Support': int(val['support'])
-                }
-        
-        df = pd.DataFrame(class_metrics).T
-        df.index.name = 'Disease Class'
-        st.dataframe(df, use_container_width=True, height=600)
-        
-        # Show summary averages
-        if 'macro avg' in report_data:
-            macro = report_data['macro avg']
-            weighted = report_data['weighted avg']
-            acc = report_data.get('accuracy', 0)
+        if total_samples > 0:
+            correct_preds = row[class_idx]
+            accuracy = correct_preds / total_samples
             
             st.markdown(f"""
             <div class="info-section">
-                <h4>Summary Metrics</h4>
-                <p>
-                <strong>Overall Accuracy:</strong> {acc*100:.2f}% &nbsp;&nbsp;|&nbsp;&nbsp;
-                <strong>Macro Avg F1:</strong> {macro['f1-score']:.4f} &nbsp;&nbsp;|&nbsp;&nbsp;
-                <strong>Weighted Avg F1:</strong> {weighted['f1-score']:.4f}
-                </p>
+                <h4>Primary Vector</h4>
+                <p>When analyzing <strong>{predicted_class_clean}</strong> samples, the model correctly identifies them 
+                <strong style="color:#10b981;">{accuracy*100:.1f}%</strong> of the time.</p>
             </div>
             """, unsafe_allow_html=True)
-    else:
-        st.info("Classification report not yet generated.")
+            
+            # Find top confusions
+            confusions = []
+            for i, count in enumerate(row):
+                if i != class_idx and count > 0:
+                    confusions.append((class_names[i], count))
+                    
+            confusions.sort(key=lambda x: x[1], reverse=True)
+            
+            if confusions:
+                st.markdown("#### Secondary Confusion Vectors")
+                for conf_class, count in confusions[:3]:  # Top 3 confusions
+                    conf_pct = count / total_samples
+                    clean_conf_name = conf_class.replace('___', ' -> ').replace('_', ' ')
+                    st.markdown(f"""
+                    <div style="background-color: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444; 
+                                padding: 0.8rem; margin: 0.5rem 0; border-radius: 4px;">
+                        <span style="color: #cbd5e1; font-weight: 500;">{clean_conf_name}</span> 
+                        <span style="float: right; color: #ef4444; font-weight: 600;">{conf_pct*100:.1f}% Risk</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.success("No historical confusion vectors detected for this pathology. Model distinction is highly isolated.")
+                
+    except (ValueError, IndexError) as e:
+        st.error("Error analyzing confusion matrix. Data mismatch.")
+        
+    st.markdown("---")
+    
+    # --- Model Comparison ---
+    st.markdown("### Architecture Performance")
+    render_model_comparison_chart()
 
 
 # ===== MAIN APP =====
