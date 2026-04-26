@@ -6,8 +6,6 @@ venv/
 
 # Datasets and heavy files
 plantvillage dataset/
-models/*.keras
-models/*.h5
 
 # Python caches
 __pycache__/
