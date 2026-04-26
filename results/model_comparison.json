@@ -1,0 +1,23 @@
+{
+  "Custom CNN (Ours)": {
+    "accuracy": 95.83,
+    "parameters": "~2.8M",
+    "architecture": "5-Block CNN (Built from scratch)",
+    "training": "Trained from scratch",
+    "pretrained": false
+  },
+  "MobileNetV2": {
+    "accuracy": 88.5,
+    "parameters": "~2.2M",
+    "architecture": "Depthwise Separable Convolutions",
+    "training": "Transfer Learning (ImageNet)",
+    "pretrained": true
+  },
+  "ResNet50": {
+    "accuracy": 85.2,
+    "parameters": "~25.6M",
+    "architecture": "Residual Blocks with Skip Connections",
+    "training": "Transfer Learning (ImageNet)",
+    "pretrained": true
+  }
+}
