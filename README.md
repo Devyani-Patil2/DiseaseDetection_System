@@ -7,10 +7,10 @@ This project implements a highly accurate, **Custom Convolutional Neural Network
 The system identifies **38 different disease classes** across **14 plant species** and features a professional, dynamic web dashboard for real-time inference and clinical analytics.
 
 ### 🏆 Key Achievements & Features
-- 🧠 **Custom Architecture:** A deep 5-block CNN built from scratch with Batch Normalization and aggressive Dropout, achieving **95.8% Test Accuracy**.
-- 📊 **Dynamic Analytics Dashboard:** A Streamlit interface that not only diagnoses the leaf but dynamically generates precision, recall, and specific confusion risks *only* for the predicted disease.
-- ⚖️ **Imbalance Handling:** Algorithmic class weight balancing ensures rare diseases are detected just as accurately as common ones.
-- 🎨 **Robust Augmentation:** On-the-fly data augmentation (rotation, zoom, translation, brightness) makes the model highly resilient to real-world photo variations.
+- **Custom Architecture:** A deep 5-block CNN built from scratch with Batch Normalization and aggressive Dropout, achieving **95.8% Test Accuracy**.
+- **Dynamic Analytics Dashboard:** A Streamlit interface that not only diagnoses the leaf but dynamically generates precision, recall, and specific confusion risks *only* for the predicted disease.
+- **Imbalance Handling:** Algorithmic class weight balancing ensures rare diseases are detected just as accurately as common ones.
+- **Robust Augmentation:** On-the-fly data augmentation (rotation, zoom, translation, brightness) makes the model highly resilient to real-world photo variations.
 - 📈 **Automated Evaluation:** Complete pipeline for generating ROC curves, JSON classification reports, and dynamic confusion matrices.
 
 ---
@@ -59,7 +59,7 @@ Ensure the PlantVillage dataset is extracted into the `plantvillage dataset/colo
 
 ---
 
-## 🚀 Usage Guide
+## Usage Guide
 
 ### 1. Train the Model
 The model is trained entirely from scratch. The pipeline automatically applies Early Stopping and Learning Rate reduction to ensure optimal convergence.
@@ -84,7 +84,7 @@ Open `http://localhost:8501` in your browser.
 
 ---
 
-## 🧠 Model Architecture
+## Model Architecture
 
 The model is a **Custom 5-Block CNN** designed specifically for high-resolution leaf texture analysis.
 
@@ -114,7 +114,7 @@ Instead of relying on pre-trained networks (like ResNet or MobileNet) which are 
 
 ---
 
-## 🖥️ Dashboard Features
+## Dashboard Features
 
 The application features a modern, dark-themed UI split into two distinct pages:
 
@@ -130,7 +130,7 @@ The application features a modern, dark-themed UI split into two distinct pages:
 
 ---
 
-## 📊 Supported Plants & Diseases (38 Classes)
+## Supported Plants & Diseases (38 Classes)
 
 | Plant | Diseases Detected |
 |-------|-------------------|
@@ -151,7 +151,7 @@ The application features a modern, dark-themed UI split into two distinct pages:
 
 ---
 
-## 📚 Technologies Used
+## Technologies Used
 - **Python 3.8+**
 - **TensorFlow / Keras** (Deep Learning Framework)
 - **Streamlit** (Frontend Dashboard)
